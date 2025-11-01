@@ -30,6 +30,7 @@
                                             <th>الاسم</th>
                                             <th>القسم</th>
                                             <th>نوع الطلب</th>
+                                            <th>الأولوية</th>
                                             <th>الحالة</th>
                                             <th>تاريخ التقديم</th>
                                             <th>الإجراءات</th>
@@ -42,6 +43,15 @@
                                             <td><%= request.name %></td>
                                             <td><%= request.department %></td>
                                             <td><%= request.request_type %></td>
+                                            <td>
+                                                <span class="badge 
+                                                    <% if (request.priority === 'طارئة') { %>bg-danger<% } 
+                                                    else if (request.priority === 'عاجلة') { %>bg-warning<% } 
+                                                    else if (request.priority === 'متوسطة') { %>bg-info<% } 
+                                                    else { %>bg-secondary<% } %>">
+                                                    <%= request.priority || 'عادية' %>
+                                                </span>
+                                            </td>
                                             <td>
                                                 <span class="badge 
                                                     <% if (request.status === 'قيد المراجعة') { %>bg-warning<% } 
@@ -72,6 +82,7 @@
                 </div>
                 
                 <div class="text-center mt-3">
+                    <a href="/reports" class="btn btn-outline-success">📊 التقارير والإحصائيات</a>
                     <a href="/" class="btn btn-outline-primary">العودة للرئيسية</a>
                 </div>
             </div>

@@ -47,11 +47,19 @@ db.serialize(() => {
     department TEXT,
     request_type TEXT,
     description TEXT,
+    priority TEXT DEFAULT 'عادية',
     status TEXT DEFAULT 'قيد المراجعة',
     notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
+  
+  // إضافة عمود الأولوية للجداول الموجودة
+  db.run(`ALTER TABLE requests ADD COLUMN priority TEXT DEFAULT 'عادية'`, (err) => {
+    if (err && !err.message.includes('duplicate column')) {
+      console.log('عمود الأولوية موجود مسبقاً');
+    }
+  });
 });
 
 // الصفحة الرئيسية - تقديم الطلب
@@ -61,7 +69,7 @@ app.get('/', (req, res) => {
 
 // معالجة تقديم الطلب
 app.post('/submit', async (req, res) => {
-  const { name, email, department, request_type, description } = req.body;
+  const { name, email, department, request_type, description, priority } = req.body;
   const request_id = 'REQ' + Date.now();
 
   try {
@@ -75,6 +83,7 @@ app.post('/submit', async (req, res) => {
       department,
       request_type,
       description,
+      priority: priority || 'عادية',
       status: 'قيد المراجعة',
       notes: '',
       created_at: new Date(),
@@ -83,9 +92,9 @@ app.post('/submit', async (req, res) => {
 
     // حفظ في SQLite
     db.run(
-      `INSERT INTO requests (request_id, name, email, department, request_type, description) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [request_id, name, email, department, request_type, description],
+      `INSERT INTO requests (request_id, name, email, department, request_type, description, priority) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [request_id, name, email, department, request_type, description, priority || 'عادية'],
       async function(err) {
         if (err) {
           console.error('SQLite Error:', err);
@@ -294,4 +303,108 @@ app.post('/admin/update', async (req, res) => {
 // تشغيل السيرفر
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`السيرفر يعمل على المنفذ ${PORT}`);
+});
+
+
+
+// صفحة التقارير
+app.get('/reports', async (req, res) => {
+  try {
+    // جلب الإحصائيات من Firebase
+    const requestsRef = collection(firestore, 'requests');
+    const querySnapshot = await getDocs(requestsRef);
+    
+    let requests = [];
+    let stats = {
+      total: 0,
+      pending: 0,
+      inProgress: 0,
+      completed: 0,
+      rejected: 0,
+      byDepartment: {}
+    };
+
+    querySnapshot.forEach((doc) => {
+      const data = { id: doc.id, ...doc.data() };
+      requests.push(data);
+      
+      // حساب الإحصائيات
+      stats.total++;
+      switch(data.status) {
+        case 'قيد المراجعة': stats.pending++; break;
+        case 'تحت المعالجة': stats.inProgress++; break;
+        case 'منجز': stats.completed++; break;
+        case 'مرفوض': stats.rejected++; break;
+      }
+      
+      // إحصائيات الأقسام
+      if (stats.byDepartment[data.department]) {
+        stats.byDepartment[data.department]++;
+      } else {
+        stats.byDepartment[data.department] = 1;
+      }
+    });
+
+    if (requests.length === 0) {
+      // إذا لم توجد بيانات في Firebase، اجلب من SQLite
+      db.all('SELECT * FROM requests ORDER BY created_at DESC', (err, rows) => {
+        if (err) {
+          console.error(err);
+          res.status(500).send('خطأ في استرجاع البيانات');
+        } else {
+          // حساب الإحصائيات من SQLite
+          stats = {
+            total: rows.length,
+            pending: rows.filter(r => r.status === 'قيد المراجعة').length,
+            inProgress: rows.filter(r => r.status === 'تحت المعالجة').length,
+            completed: rows.filter(r => r.status === 'منجز').length,
+            rejected: rows.filter(r => r.status === 'مرفوض').length,
+            byDepartment: {}
+          };
+          
+          rows.forEach(row => {
+            if (stats.byDepartment[row.department]) {
+              stats.byDepartment[row.department]++;
+            } else {
+              stats.byDepartment[row.department] = 1;
+            }
+          });
+          
+          res.render('reports', { requests: rows, stats });
+        }
+      });
+    } else {
+      res.render('reports', { requests, stats });
+    }
+
+  } catch (error) {
+    console.error('Firebase reports error:', error);
+    // في حالة فشل Firebase، اجلب من SQLite
+    db.all('SELECT * FROM requests ORDER BY created_at DESC', (err, rows) => {
+      if (err) {
+        console.error(err);
+        res.status(500).send('خطأ في استرجاع البيانات');
+      } else {
+        // حساب الإحصائيات من SQLite
+        const stats = {
+          total: rows.length,
+          pending: rows.filter(r => r.status === 'قيد المراجعة').length,
+          inProgress: rows.filter(r => r.status === 'تحت المعالجة').length,
+          completed: rows.filter(r => r.status === 'منجز').length,
+          rejected: rows.filter(r => r.status === 'مرفوض').length,
+          byDepartment: {}
+        };
+        
+        rows.forEach(row => {
+          if (stats.byDepartment[row.department]) {
+            stats.byDepartment[row.department]++;
+          } else {
+            stats.byDepartment[row.department] = 1;
+          }
+        });
+        
+        res.render('reports', { requests: rows, stats });
+      }
+    });
+  }
 });

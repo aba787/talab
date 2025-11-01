@@ -33,6 +33,20 @@
                                 </small>
                             </div>
                             
+                            <div class="mb-3 text-center">
+                                <button type="button" class="btn btn-outline-secondary" onclick="startQRScanner()">
+                                    📱 مسح الباركود بالكاميرا
+                                </button>
+                            </div>
+                            
+                            <div id="qr-scanner" style="display: none;" class="mb-3">
+                                <video id="qr-video" width="100%" height="250" style="border: 2px solid #007bff; border-radius: 8px;"></video>
+                                <canvas id="qr-canvas" style="display: none;"></canvas>
+                                <div class="text-center mt-2">
+                                    <button type="button" class="btn btn-sm btn-secondary" onclick="stopQRScanner()">إيقاف المسح</button>
+                                </div>
+                            </div>
+                            
                             <div class="text-center">
                                 <button type="submit" class="btn btn-info btn-lg">تتبع الطلب</button>
                             </div>
@@ -46,5 +60,62 @@
             </div>
         </div>
     </div>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script>
+        let video, canvas, context;
+        let scanning = false;
+
+        function startQRScanner() {
+            const scanner = document.getElementById('qr-scanner');
+            scanner.style.display = 'block';
+            
+            video = document.getElementById('qr-video');
+            canvas = document.getElementById('qr-canvas');
+            context = canvas.getContext('2d');
+            
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.play();
+                    scanning = true;
+                    scanQR();
+                })
+                .catch(err => {
+                    alert('خطأ في الوصول للكاميرا: ' + err.message);
+                    console.error(err);
+                });
+        }
+
+        function stopQRScanner() {
+            scanning = false;
+            const scanner = document.getElementById('qr-scanner');
+            scanner.style.display = 'none';
+            
+            if (video && video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+        }
+
+        function scanQR() {
+            if (!scanning) return;
+            
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.height = video.videoHeight;
+                canvas.width = video.videoWidth;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                    document.getElementById('request_id').value = code.data;
+                    stopQRScanner();
+                    alert('تم العثور على الكود: ' + code.data);
+                }
+            }
+            
+            requestAnimationFrame(scanQR);
+        }
+    </script>
 </body>
 </html>

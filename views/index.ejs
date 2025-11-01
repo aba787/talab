@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -18,7 +17,7 @@
                         <p class="mb-0">تقديم طلب جديد</p>
                     </div>
                     <div class="card-body">
-                        <form action="/submit" method="POST">
+                        <form action="/submit" method="POST" enctype="multipart/form-data">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="name" class="form-label">الاسم الكامل *</label>
@@ -29,7 +28,7 @@
                                     <input type="email" class="form-control" id="email" name="email" required>
                                 </div>
                             </div>
-                            
+
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="department" class="form-label">القسم/الإدارة *</label>
@@ -54,19 +53,40 @@
                                     </select>
                                 </div>
                             </div>
-                            
+
                             <div class="mb-3">
                                 <label for="description" class="form-label">تفاصيل الطلب *</label>
-                                <textarea class="form-control" id="description" name="description" rows="4" placeholder="اشرح تفاصيل طلبك هنا..." required></textarea>
+                                <textarea class="form-control" id="description" name="description" 
+                                         rows="4" placeholder="اشرح تفاصيل طلبك هنا..." required></textarea>
                             </div>
-                            
+
+                            <div class="mb-3">
+                                <label for="attachment" class="form-label">مرفقات (اختياري)</label>
+                                <input type="file" class="form-control" id="attachment" name="attachment" 
+                                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" multiple>
+                                <small class="form-text text-muted">
+                                    يمكنك إرفاق ملفات: PDF, صور, مستندات Word (الحد الأقصى 5 ملفات)
+                                </small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="priority" class="form-label">درجة الأولوية</label>
+                                <select class="form-control" id="priority" name="priority" required>
+                                    <option value="">اختر درجة الأولوية</option>
+                                    <option value="عادية">عادية</option>
+                                    <option value="متوسطة">متوسطة</option>
+                                    <option value="عاجلة">عاجلة</option>
+                                    <option value="طارئة">طارئة</option>
+                                </select>
+                            </div>
+
                             <div class="text-center">
                                 <button type="submit" class="btn btn-primary btn-lg">تقديم الطلب</button>
                             </div>
                         </form>
                     </div>
                 </div>
-                
+
                 <div class="text-center mt-3">
                     <a href="/track" class="btn btn-outline-info">تتبع طلب موجود</a>
                     <a href="/admin" class="btn btn-outline-warning">لوحة الإدارة</a>
