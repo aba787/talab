@@ -15,3 +15,15 @@ ignorePorts = false
 
 [agent]
 expertMode = true
+
+[workflows]
+runButton = "تشغيل نظام تتبع الطلبات"
+
+[[workflows.workflow]]
+name = "تشغيل نظام تتبع الطلبات"
+author = 46282751
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node index.js"
