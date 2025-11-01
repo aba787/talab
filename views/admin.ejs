@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -80,11 +79,17 @@
                         <% } %>
                     </div>
                 </div>
-                
-                <div class="text-center mt-3">
-                    <a href="/reports" class="btn btn-outline-success">📊 التقارير والإحصائيات</a>
-                    <a href="/" class="btn btn-outline-primary">العودة للرئيسية</a>
-                </div>
+
+                <div class="text-center mt-4">
+                            <a href="/reports" class="btn btn-info me-2">
+                                <i class="fas fa-chart-bar me-1"></i>
+                                عرض التقارير
+                            </a>
+                            <a href="/" class="btn btn-secondary">
+                                <i class="fas fa-home me-1"></i>
+                                العودة للصفحة الرئيسية
+                            </a>
+                        </div>
             </div>
         </div>
     </div>
@@ -100,7 +105,7 @@
                 <form action="/admin/update" method="POST">
                     <div class="modal-body">
                         <input type="hidden" id="updateRequestId" name="request_id">
-                        
+
                         <div class="mb-3">
                             <label for="updateStatus" class="form-label">الحالة</label>
                             <select class="form-control" id="updateStatus" name="status" required>
@@ -110,7 +115,7 @@
                                 <option value="مرفوض">مرفوض</option>
                             </select>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="updateNotes" class="form-label">ملاحظات</label>
                             <textarea class="form-control" id="updateNotes" name="notes" rows="3"></textarea>
@@ -148,15 +153,15 @@
             document.getElementById('updateRequestId').value = requestId;
             document.getElementById('updateStatus').value = currentStatus;
             document.getElementById('updateNotes').value = currentNotes;
-            
+
             var modal = new bootstrap.Modal(document.getElementById('updateModal'));
             modal.show();
         }
-        
+
         function showDetails(requestData) {
             const request = JSON.parse(requestData.replace(/&quot;/g, '"'));
             const detailsContent = document.getElementById('detailsContent');
-            
+
             detailsContent.innerHTML = `
                 <div class="row">
                     <div class="col-md-6"><strong>رقم الطلب:</strong> ${request.request_id}</div>
@@ -178,7 +183,7 @@
                     <div class="col-md-6"><small><strong>آخر تحديث:</strong> ${new Date(request.updated_at).toLocaleString('ar-SA')}</small></div>
                 </div>
             `;
-            
+
             var modal = new bootstrap.Modal(document.getElementById('detailsModal'));
             modal.show();
         }
