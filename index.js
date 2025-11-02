@@ -44,6 +44,7 @@ localDb.serialize(() => {
     request_id TEXT UNIQUE,
     name TEXT,
     email TEXT,
+    phone TEXT,
     department TEXT,
     request_type TEXT,
     description TEXT,
@@ -53,6 +54,13 @@ localDb.serialize(() => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
+  
+  // إضافة عمود الهاتف للجدول الموجود
+  localDb.run(`ALTER TABLE requests ADD COLUMN phone TEXT`, function(err) {
+    if (err && !err.message.includes('duplicate column name')) {
+      console.log('خطأ في إضافة عمود الهاتف:', err.message);
+    }
+  });
 });
 
 // دالة إنشاء طلب جديد في Firebase
@@ -67,6 +75,7 @@ async function createRequest(data) {
       barcode: request_id,
       requester_name: data.name,
       email: data.email,
+      phone: data.phone,
       department: data.department,
       type: data.request_type,
       description: data.description,
@@ -92,13 +101,14 @@ app.get('/', (req, res) => {
 
 // معالجة تقديم الطلب
 app.post('/submit', async (req, res) => {
-  const { name, email, department, request_type, description, priority } = req.body;
+  const { name, email, phone, department, request_type, description, priority } = req.body;
 
   try {
     // إنشاء الطلب في Firebase أولاً
     const { id, request_id } = await createRequest({
       name,
       email,
+      phone,
       department,
       request_type,
       description,
@@ -110,9 +120,9 @@ app.post('/submit', async (req, res) => {
 
     // حفظ في SQLite كـ backup
     localDb.run(
-      `INSERT INTO requests (request_id, name, email, department, request_type, description, priority) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [request_id, name, email, department, request_type, description, priority || 'عادية'],
+      `INSERT INTO requests (request_id, name, email, phone, department, request_type, description, priority) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [request_id, name, email, phone, department, request_type, description, priority || 'عادية'],
       function(err) {
         if (err) {
           console.error('SQLite Backup Error:', err);

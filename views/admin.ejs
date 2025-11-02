@@ -27,6 +27,7 @@
                                         <tr>
                                             <th>رقم الطلب</th>
                                             <th>الاسم</th>
+                                            <th>الهاتف</th>
                                             <th>القسم</th>
                                             <th>نوع الطلب</th>
                                             <th>الأولوية</th>
@@ -40,6 +41,7 @@
                                         <tr>
                                             <td class="fw-bold text-primary"><%= request.request_id %></td>
                                             <td><%= request.name %></td>
+                                            <td><%= request.phone || 'غير محدد' %></td>
                                             <td><%= request.department %></td>
                                             <td><%= request.request_type %></td>
                                             <td>
@@ -169,7 +171,11 @@
                 </div><hr>
                 <div class="row">
                     <div class="col-md-6"><strong>البريد:</strong> ${request.email}</div>
+                    <div class="col-md-6"><strong>الهاتف:</strong> ${request.phone || 'غير محدد'}</div>
+                </div><hr>
+                <div class="row">
                     <div class="col-md-6"><strong>القسم:</strong> ${request.department}</div>
+                    <div class="col-md-6"></div>
                 </div><hr>
                 <div class="row">
                     <div class="col-md-6"><strong>نوع الطلب:</strong> ${request.request_type}</div>
