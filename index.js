@@ -74,9 +74,11 @@ async function createRequest(data) {
       request_id: request_id,
       barcode: request_id,
       requester_name: data.name,
+      name: data.name, // إضافة الحقل name أيضاً للتوافق
       email: data.email,
       phone: data.phone,
       department: data.department,
+      request_type: data.request_type,
       type: data.request_type,
       description: data.description,
       priority: data.priority || 'عادية',
@@ -103,7 +105,16 @@ app.get('/', (req, res) => {
 app.post('/submit', async (req, res) => {
   const { name, email, phone, department, request_type, description, priority } = req.body;
 
+  // التحقق من البيانات المطلوبة
+  if (!name || !email || !department || !request_type || !description) {
+    return res.status(400).render('index', { 
+      error: 'يرجى ملء جميع الحقول المطلوبة' 
+    });
+  }
+
   try {
+    console.log('بدء إنشاء طلب جديد للمستخدم:', name);
+    
     // إنشاء الطلب في Firebase أولاً
     const { id, request_id } = await createRequest({
       name,
@@ -114,6 +125,8 @@ app.post('/submit', async (req, res) => {
       description,
       priority
     });
+
+    console.log('تم إنشاء الطلب بنجاح، رقم الطلب:', request_id);
 
     // إنشاء الباركود
     const qrCodeData = await QRCode.toDataURL(request_id);
@@ -141,7 +154,9 @@ app.post('/submit', async (req, res) => {
 
   } catch (error) {
     console.error('خطأ في إنشاء الطلب:', error);
-    res.status(500).send('خطأ في إنشاء الطلب');
+    res.status(500).render('index', { 
+      error: 'حدث خطأ في إرسال الطلب. يرجى المحاولة مرة أخرى.' 
+    });
   }
 });
 
