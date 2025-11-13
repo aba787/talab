@@ -69,29 +69,34 @@ async function createRequest(data) {
   const request_id = 'REQ' + Date.now();
 
   try {
-    await setDoc(doc(db, "requests", id), {
+    const requestData = {
       id: id,
       request_id: request_id,
       barcode: request_id,
       requester_name: data.name,
-      name: data.name, // إضافة الحقل name أيضاً للتوافق
+      name: data.name,
       email: data.email,
-      phone: data.phone,
+      phone: data.phone || '',
       department: data.department,
       request_type: data.request_type,
       type: data.request_type,
       description: data.description,
       priority: data.priority || 'عادية',
       status: "قيد المراجعة",
-      last_update: serverTimestamp(),
+      last_update: new Date(),
       notes: "",
-      created_at: serverTimestamp()
-    });
+      created_at: new Date()
+    };
+
+    console.log('محاولة حفظ البيانات في Firebase:', requestData);
+
+    await setDoc(doc(db, "requests", id), requestData);
 
     console.log('تم إنشاء الطلب في Firebase بنجاح، ID:', id);
     return { id, request_id };
   } catch (error) {
-    console.error('خطأ في إنشاء الطلب في Firebase:', error);
+    console.error('خطأ في إنشاء الطلب في Firebase:', error.message);
+    console.error('تفاصيل الخطأ:', error);
     throw error;
   }
 }
@@ -101,12 +106,20 @@ app.get('/', (req, res) => {
   res.render('index');
 });
 
+// اختبار الاتصال
+app.get('/test', (req, res) => {
+  res.render('test-connection');
+});
+
 // معالجة تقديم الطلب
 app.post('/submit', async (req, res) => {
   const { name, email, phone, department, request_type, description, priority } = req.body;
 
+  console.log('البيانات المرسلة:', { name, email, phone, department, request_type, description, priority });
+
   // التحقق من البيانات المطلوبة
   if (!name || !email || !department || !request_type || !description) {
+    console.log('بيانات ناقصة');
     return res.status(400).render('index', { 
       error: 'يرجى ملء جميع الحقول المطلوبة' 
     });
@@ -115,35 +128,46 @@ app.post('/submit', async (req, res) => {
   try {
     console.log('بدء إنشاء طلب جديد للمستخدم:', name);
     
-    // إنشاء الطلب في Firebase أولاً
-    const { id, request_id } = await createRequest({
-      name,
-      email,
-      phone,
-      department,
-      request_type,
-      description,
-      priority
+    // إنشاء رقم الطلب
+    const request_id = 'REQ' + Date.now();
+    console.log('رقم الطلب المولد:', request_id);
+
+    // حفظ في SQLite أولاً كنسخة احتياطية
+    await new Promise((resolve, reject) => {
+      localDb.run(
+        `INSERT INTO requests (request_id, name, email, phone, department, request_type, description, priority, status) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [request_id, name, email, phone, department, request_type, description, priority || 'عادية', 'قيد المراجعة'],
+        function(err) {
+          if (err) {
+            console.error('SQLite Error:', err);
+            reject(err);
+          } else {
+            console.log('تم حفظ الطلب في SQLite بنجاح');
+            resolve();
+          }
+        }
+      );
     });
 
-    console.log('تم إنشاء الطلب بنجاح، رقم الطلب:', request_id);
+    // محاولة حفظ في Firebase
+    try {
+      const { id } = await createRequest({
+        name,
+        email,
+        phone,
+        department,
+        request_type,
+        description,
+        priority
+      });
+      console.log('تم حفظ الطلب في Firebase بنجاح');
+    } catch (firebaseError) {
+      console.error('خطأ في Firebase، لكن تم حفظ الطلب محلياً:', firebaseError);
+    }
 
     // إنشاء الباركود
     const qrCodeData = await QRCode.toDataURL(request_id);
-
-    // حفظ في SQLite كـ backup
-    localDb.run(
-      `INSERT INTO requests (request_id, name, email, phone, department, request_type, description, priority) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [request_id, name, email, phone, department, request_type, description, priority || 'عادية'],
-      function(err) {
-        if (err) {
-          console.error('SQLite Backup Error:', err);
-        } else {
-          console.log('تم حفظ الطلب في SQLite backup بنجاح');
-        }
-      }
-    );
 
     res.render('success', { 
       request_id, 
@@ -153,9 +177,9 @@ app.post('/submit', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('خطأ في إنشاء الطلب:', error);
+    console.error('خطأ عام في إنشاء الطلب:', error);
     res.status(500).render('index', { 
-      error: 'حدث خطأ في إرسال الطلب. يرجى المحاولة مرة أخرى.' 
+      error: 'حدث خطأ في إرسال الطلب: ' + error.message 
     });
   }
 });
