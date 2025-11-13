@@ -40,7 +40,7 @@
                                         <% requests.forEach(request => { %>
                                         <tr>
                                             <td class="fw-bold text-primary"><%= request.request_id %></td>
-                                            <td><%= request.name %></td>
+                                            <td><%= request.requester_name || request.name %></td>
                                             <td><%= request.phone || 'غير محدد' %></td>
                                             <td><%= request.department %></td>
                                             <td><%= request.request_type %></td>
