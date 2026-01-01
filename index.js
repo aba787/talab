@@ -193,15 +193,44 @@ app.get('/track', (req, res) => {
 app.post('/track', async (req, res) => {
   const { request_id } = req.body;
 
+  if (!request_id || request_id.trim() === '') {
+    return res.render('track', { error: 'يرجى إدخال رقم الطلب' });
+  }
+
+  console.log('البحث عن الطلب:', request_id);
+
   try {
-    // البحث في Firebase
+    // أولاً: البحث في SQLite (أسرع وأكثر موثوقية)
+    const sqliteResult = await new Promise((resolve, reject) => {
+      localDb.get(
+        'SELECT * FROM requests WHERE request_id = ?',
+        [request_id.trim()],
+        (err, row) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(row);
+          }
+        }
+      );
+    });
+
+    if (sqliteResult) {
+      console.log('تم العثور على الطلب في SQLite');
+      return res.render('request-details', { request: sqliteResult });
+    }
+
+    // ثانياً: البحث في Firebase
+    console.log('البحث في Firebase...');
     const requestsRef = collection(db, 'requests');
     const querySnapshot = await getDocs(requestsRef);
 
     let firebaseResult = null;
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
-      if (data.request_id === request_id || data.barcode === request_id) {
+      if (data.request_id === request_id.trim() || 
+          data.barcode === request_id.trim() ||
+          docSnap.id === request_id.trim()) {
         firebaseResult = { 
           id: docSnap.id, 
           ...data,
@@ -213,29 +242,49 @@ app.post('/track', async (req, res) => {
     });
 
     if (firebaseResult) {
-      res.render('request-details', { request: firebaseResult });
-      return;
+      console.log('تم العثور على الطلب في Firebase');
+      return res.render('request-details', { request: firebaseResult });
     }
 
-    // إذا لم يوجد في Firebase، ابحث في SQLite backup
+    // إذا لم يتم العثور على الطلب في أي مكان
+
+
+// صفحة اختبار لعرض جميع الطلبات (للمطورين فقط)
+app.get('/debug/requests', (req, res) => {
+  localDb.all('SELECT * FROM requests ORDER BY created_at DESC', (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.json({
+        message: 'قائمة جميع الطلبات المحفوظة محلياً',
+        total: rows.length,
+        requests: rows
+      });
+    }
+  });
+});
+
+    console.log('لم يتم العثور على الطلب:', request_id);
+    res.render('track', { error: `لم يتم العثور على الطلب رقم: ${request_id}. تأكد من صحة الرقم وحاول مرة أخرى.` });
+
+  } catch (error) {
+    console.error('خطأ في البحث:', error);
+    
+    // في حالة فشل Firebase، جرب SQLite مرة أخرى
     localDb.get(
       'SELECT * FROM requests WHERE request_id = ?',
-      [request_id],
+      [request_id.trim()],
       (err, row) => {
         if (err) {
-          console.error(err);
-          res.status(500).send('خطأ في البحث');
+          console.error('خطأ في SQLite أيضاً:', err);
+          res.render('track', { error: 'خطأ في البحث عن الطلب. يرجى المحاولة مرة أخرى.' });
         } else if (row) {
           res.render('request-details', { request: row });
         } else {
-          res.render('track', { error: 'لم يتم العثور على الطلب' });
+          res.render('track', { error: `لم يتم العثور على الطلب رقم: ${request_id}` });
         }
       }
     );
-
-  } catch (error) {
-    console.error('Firebase search error:', error);
-    res.render('track', { error: 'خطأ في البحث عن الطلب' });
   }
 });
 

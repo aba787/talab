@@ -25,11 +25,13 @@
                         
                         <form action="/track" method="POST">
                             <div class="mb-3">
-                                <label for="request_id" class="form-label">رقم الطلب</label>
+                                <label for="request_id" class="form-label">رقم الطلب *</label>
                                 <input type="text" class="form-control" id="request_id" name="request_id" 
-                                       placeholder="أدخل رقم الطلب (مثال: REQ1234567890)" required>
+                                       placeholder="أدخل رقم الطلب (مثال: REQ1698765432)" required
+                                       style="direction: ltr; text-align: center;">
                                 <small class="form-text text-muted">
-                                    يمكنك إدخال رقم الطلب يدوياً أو استخدام الماسح الضوئي للباركود
+                                    <strong>مهم:</strong> رقم الطلب يبدأ بـ REQ متبوعاً بأرقام<br>
+                                    يمكنك العثور على الرقم في رسالة التأكيد أو الباركود المرسل لك
                                 </small>
                             </div>
                             

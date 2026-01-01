@@ -73,10 +73,24 @@
                         
                         <div class="row">
                             <div class="col-md-6">
-                                <small class="text-muted">تاريخ التقديم: <%= new Date(request.created_at).toLocaleDateString('ar-SA') %></small>
+                                <small class="text-muted">تاريخ التقديم: 
+                                <% if (request.created_at) { %>
+                                    <%= new Date(request.created_at).toLocaleDateString('ar-SA') %>
+                                <% } else { %>
+                                    غير محدد
+                                <% } %>
+                                </small>
                             </div>
                             <div class="col-md-6">
-                                <small class="text-muted">آخر تحديث: <%= new Date(request.updated_at).toLocaleDateString('ar-SA') %></small>
+                                <small class="text-muted">آخر تحديث: 
+                                <% if (request.updated_at) { %>
+                                    <%= new Date(request.updated_at).toLocaleDateString('ar-SA') %>
+                                <% } else if (request.last_update) { %>
+                                    <%= new Date(request.last_update).toLocaleDateString('ar-SA') %>
+                                <% } else { %>
+                                    لم يتم التحديث بعد
+                                <% } %>
+                                </small>
                             </div>
                         </div>
                     </div>
